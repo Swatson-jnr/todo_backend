@@ -84,7 +84,12 @@ export const register = async (req, res) => {
 
     return res
       .status(201)
-      .json({ success: true, message: "Account created Successfully", token });
+      .json({
+        success: true,
+        message: "Account created Successfully",
+        token,
+        user,
+      });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
