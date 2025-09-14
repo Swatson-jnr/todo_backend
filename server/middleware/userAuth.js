@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-export const authenticate = (req, res, next) => {
+const userAuth = (req, res, next) => {
   try {
     const token = req.header("Authorization").replace("Bearer ", "");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -11,3 +11,5 @@ export const authenticate = (req, res, next) => {
     res.status(401).json({ message: "Please authenticate" });
   }
 };
+
+export default userAuth;
