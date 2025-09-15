@@ -55,7 +55,17 @@ export const getAllTodos = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    res.status(200).json({ success: true, todos: user.todo });
+    res.status(200).json({
+      success: true,
+      todos: user.todo.map((t) => ({
+        _id: t._id,
+        title: t.title,
+        description: t.description,
+        completed: t.completed,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      })),
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
