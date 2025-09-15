@@ -140,7 +140,7 @@ export const deleteTodo = async (req, res) => {
 export const markTodoComplete = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { todoId } = req.params;
+    const todoId = req.params;
 
     const user = await userModel.findById(userId);
     if (!user)

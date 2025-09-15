@@ -14,7 +14,12 @@ const userSchema = new mongoose.Schema(
       {
         title: { type: String, required: true },
         description: { type: String, required: true },
-        priority: { type: String, required: true },
+        priority: {
+          type: String,
+          enum: ["Extreme", "Moderate", "Low"],
+          required: true,
+          default: "Medium",
+        },
         completed: { type: Boolean, default: false },
       },
     ],
