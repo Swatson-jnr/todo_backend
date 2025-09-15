@@ -10,7 +10,7 @@ const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   //   const { name, email, password } = req.body;
 
   //   if (!name || !email || !password) {
@@ -82,14 +82,13 @@ export const register = async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "Account created Successfully",
-        token,
-        user,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "Account created Successfully",
+      token,
+      user,
+    });
+    next();
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
