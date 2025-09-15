@@ -76,7 +76,7 @@ export const updateTodo = async (req, res) => {
     }
     // Update the specific todo inside the user's todo array
     const user = await userModel.findOneAndUpdate(
-      { _id: "68c7e89d2dbb895691e4dc4c", "todo._id": todoId },
+      { _id: userId, "todo._id": todoId },
       {
         $set: {
           "todo.$.title": title,
