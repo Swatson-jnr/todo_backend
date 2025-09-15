@@ -140,22 +140,19 @@ export const deleteTodo = async (req, res) => {
 export const markTodoComplete = async (req, res) => {
   try {
     const userId = req.user.id;
-    const todoId = req.params;
+    const todoId = req.params.id; // ✅ make sure to destructure .id not whole params
 
-    const user = await userModel.findById(userId);
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+    const user = await userModel.findOneAndUpdate(
+      { _id: userId, "todo._id": todoId },
+      { $set: { "todo.$.completed": true } },
+      { new: true } // return updated doc
+    );
 
-    const todo = user.todo.id(todoId); // Mongoose helper
-    if (!todo)
+    if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Todo not found" });
-
-    todo.completed = true;
-    await user.save();
+    }
 
     res.status(200).json({
       success: true,
