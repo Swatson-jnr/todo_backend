@@ -1,5 +1,3 @@
-// import mongoose from "mongoose";
-import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
@@ -10,48 +8,27 @@ const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 
-export const register = async (req, res, next) => {
-  //   const { name, email, password } = req.body;
-
-  //   if (!name || !email || !password) {
-  //     return res.status(418).json({ success: false, message: "missing details" });
-  //   }
-
-  //   try {
-  //     const existingUser = await userModel.findOne({ email });
-  //     if (existingUser) {
-  //       return res
-  //         .status(409)
-  //         .json({ success: false, message: "user already exist" });
-  //     }
-  //     const hashedPassword = await bcrypt.hash(password, 10);
-  //     const user = new userModel({ name, email, password: hashedPassword });
-  //     await user.save();
-
-  //     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-  //       expiresIn: "7d",
-  //     });
-
-  //     res.cookie("token", token, {
-  //       httpOnly: true,
-  //       secure: process.env.NODE_ENV === "production",
-  //       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  //       maxAge: 7 * 24 * 60 * 60 * 1000,
-  //     });
-
-  //sending welcome email
+export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    //checking if user already exist or not
-    const exists = await userModel.findOne({ email });
-    if (exists) {
-      return res.json({ success: false, message: "User already exists" });
+    if (!name || !email || !password) {
+      return res
+        .status(404)
+        .json({ success: false, message: "missing details" });
     }
 
-    //validating email format and strong password
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ success: false, message: "User already exists" });
+    }
+
     if (!validator.isEmail(email)) {
-      return res.json({ success: false, mesage: "Please enter a valid email" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Please enter a valid email" });
     }
     if (password.length < 8) {
       return res.json({
@@ -60,35 +37,40 @@ export const register = async (req, res, next) => {
       });
     }
 
-    //hashin user password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    const newUser = new userModel({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new userModel({ name, email, password: hashedPassword });
     const user = await newUser.save();
 
     const token = createToken(user._id);
 
-    const mailOptions = {
+    // Sending welcome email
+    await transporter.sendMail({
       from: process.env.SENDER_EMAIL,
       to: email,
       subject: "Welcome to Authenticator",
       text: `Welcome to Authenticator website. Your Account has been created with email id: ${email}`,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    //generating otp
+    const otp = String(Math.floor(1000 + Math.random() * 900000));
+    user.verifyOtp = otp;
+    user.verifyotpexpireAt = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save();
+
+    // Sending OTP mail
+    await transporter.sendMail({
+      from: process.env.SENDER_EMAIL,
+      to: user.email,
+      subject: "Account Verification",
+      text: `Your OTP is ${otp}. Verify your account using this OTP.`,
+    });
 
     return res.status(201).json({
       success: true,
-      message: "Account created Successfully",
+      message: "Account created Successfully. OTP sent.",
       token,
       user,
     });
-    next();
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
@@ -98,7 +80,9 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.json({ success: false, message: "email and password required" });
+    return res
+      .status(409)
+      .json({ success: false, message: "email and password required" });
   }
 
   try {
@@ -117,14 +101,7 @@ export const login = async (req, res) => {
       expiresIn: "7d",
     });
 
-    // res.cookie("token", token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    //   maxAge: 7 * 24 * 60 * 60 * 1000,
-    // });
-
-    return res.json({ success: true, token });
+    return res.json({ success: true, token, user });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
@@ -193,7 +170,7 @@ export const verifyEmail = async (req, res) => {
   const { otp } = req.body;
 
   if (!userId || !otp) {
-    return res.json({ sucess: false, message: "Missing Details" });
+    return res.status(409).json({ sucess: false, message: "Missing Details" });
   }
 
   try {
