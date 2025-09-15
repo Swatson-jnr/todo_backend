@@ -1,20 +1,23 @@
+import jwt from "jsonwebtoken";
+
 const userAuth = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const { token } = req.headers;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res
-      .status(401)
-      .json({ success: false, message: "Not Authorized, Login Again" });
+      .status(404)
+      .json({ success: false, message: "Not Authorized Login Again" });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // attach user id
     req.user = { id: decoded.id };
     next();
   } catch (error) {
-    res.status(401).json({ success: false, message: "Invalid token" });
+    console.log(error);
+    res.json({ success: false, message: error.message });
   }
 };
 
